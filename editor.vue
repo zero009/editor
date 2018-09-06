@@ -69,10 +69,11 @@
         // insert 是获取图片 url 后，插入到编辑器的方法
         let xhr = new XMLHttpRequest()
         var formData = new FormData()
-        if (files.length > 1) {
+    /* if (files.length > 1) {
           _this.$message.error('一次只能上传一张图片')
           return
         }
+    */
         if (!/\.(jpg|jpeg|png|bmp|gif)$/i.test(files[0].name)) {
           // 后缀名不合法，不是图片
           _this.$message.error('请上传图片文件')
@@ -113,7 +114,8 @@
         for (let key in access) {
           formData.append(key, access[key])
         }
-        // 添加文件
+        // 
+   /* 添加文件 单张图片
         files.forEach(file => {
           formData.append('file', file)
         })
@@ -126,25 +128,52 @@
             _this.$message.error('未知错误，状态码：' + xhr.status)
           }
         }
-        xhr.send(formData)
+         xhr.send(formData)
+       }
+     */
+    // 添加文件 多张图片 利用回调的方式
+        ;(function iterator (i) {
+          if (i === files.length) {
+            return
+          }
+          let name = files[i].name.split('.')[0] + '_' + Math.round(new Date().getTime() / 1000) + '.' + files[i].name.split('.')[1]
+          // 异步请求
+          formData.set('file', files[i], name)
+          formData.set('key', _this.accessInfo.key + name)
+          xhr.open('POST', _this.accessInfo.host)
+          xhr.onreadystatechange = () => {
+            // 阿里云返回201
+            if (xhr.readyState === 4 && xhr.status === 201 && imgUrl) {
+              insert(xhr.responseXML.querySelector('Location').textContent)
+              setTimeout(() => {
+                iterator(i + 1)
+              }, 500)
+            } else if (xhr.readyState === 4 && xhr.status !== 201) {
+              _this.$message.error('未知错误，状态码：' + xhr.status)
+            }
+          }
+          xhr.send(formData)
+        })(0)
       }
+  // 打印出错误
       editor.customConfig.customAlert = info => {
         this.$message.error(info)
       }
       editor.customConfig.showLinkImg = false
-      // 回调即插入图片的地址
+ /* 回调即插入图片的地址
       editor.customConfig.linkImgCallback = function (url) {}
       editor.customConfig.linkImgCheck = function (src) {
-//        console.log(src) // 图片的链接
-//        var img2 = new Image()
-//        img2.src = src
-//        img2.onload = function () {
-//          if (img2.width > 1230 || img2.width < 600 || img2.height > 960) {
-//            _this.$message.error('商品图片尺寸宽度在600px至1230px之间,高度不超过960px')
-//            return '' // 返回字符串，即校验失败的提示信息
-//          }
-//        }
+         console.log(src) // 图片的链接
+         var img2 = new Image()
+         img2.src = src
+         img2.onload = function () {
+           if (img2.width > 1230 || img2.width < 600 || img2.height > 960) {
+             _this.$message.error('商品图片尺寸宽度在600px至1230px之间,高度不超过960px')
+             return '' // 返回字符串，即校验失败的提示信息
+           }
+         }
       }
+ */
       let timer = null
       // editor.customConfig.uploadImgShowBase64 = true // 使用 base64 保存图片
       editor.customConfig.onchange = html => {
